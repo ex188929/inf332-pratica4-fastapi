@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from vagago_api.routes import router
 
-app = FastAPI(title="Hello World API", version="1.0.0")
+app = FastAPI(title="VagaGO API", version="0.0.1")
 
 # Incluindo as rotas
 app.include_router(router)

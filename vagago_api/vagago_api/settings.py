@@ -2,7 +2,7 @@ from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
-    app_name: str = "Hello World API"
+    app_name: str = "VagaGO API"
     environment: str = "development"
 
 
