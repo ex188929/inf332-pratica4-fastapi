@@ -32,6 +32,9 @@ class Job:
         self.company_name = company_name
         self.published_date = published_date
         self.url = url
+    
+    def __repr__(self):
+        return f'<Job {self.id}>'
 
     def to_dict(self):
         return {
