@@ -12,6 +12,7 @@ class Job:
         contract_type="",
         salary_min=None,
         salary_max=None,
+        salary_currency=None,
         description="",
         job_type=[],
         company_name="",
@@ -27,6 +28,7 @@ class Job:
         self.contract_type = contract_type
         self.salary_min = salary_min
         self.salary_max = salary_max
+        self.salary_currency = salary_currency
         self.description = description
         self.job_type = job_type
         self.company_name = company_name
@@ -44,6 +46,7 @@ class Job:
             "description": self.description,
             "salary_min": self.salary_min,
             "salary_max": self.salary_max,
+            "salary_currency": self.salary_currency,
             "job_type": self.job_type,
             "company_name": self.company_name,
             "published_date": self.published_date,
