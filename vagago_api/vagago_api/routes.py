@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from .services.JobicyIntegration import JobicyIntegration
 from .services.Database import Database
 from .models.User import User
@@ -8,7 +8,7 @@ router = APIRouter()
 
 
 @router.get("/jobs", summary="Vagas", tags=["Jobs"])
-def get_jobs():
+def get_jobs(request: Request):
     """
     Retorna uma lista de vagas de emprego.
     """
@@ -18,12 +18,16 @@ def get_jobs():
     count = 10
     filters = "fullstack"  # TODO: must be used to build tag (Jobicy) and term (APIBR)
 
+    # get all query parameters
+    location_param = request.query_params.get("location")
+
     # jobicy
     jobicy_integration = JobicyIntegration()
+    geo = jobicy_integration.validate_location(location_param) if location_param else []
     jobicy_data = jobicy_integration.get_data(
         {
             "count": count,  # Number of listings to return (default: 50, range: 1-50)
-            "geo": "brazil",  # Filter by job region (default: all regions)
+            "geo": geo if geo else "brazil",  # Filter by country (default: brazil)
             "industry": "dev",  # Filter by job category (default: all categories)
             # NOTE: it doesn't return anything for any tag I try to use, it seems to be a bug...
             # "tag": filters,  # Search by job title and description (default: all jobs)
@@ -54,6 +58,7 @@ def get_jobs():
     data.extend(apibr_data)
 
     return data
+
 
 @router.get("/users/{user_id}", summary="Usuário", tags=["Users"])
 def get_user(user_id: int):

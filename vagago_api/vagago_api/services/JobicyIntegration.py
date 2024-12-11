@@ -3,13 +3,79 @@ from .APIIntegration import APIIntegration
 from ..models.Job import Job
 
 
+# from enum import Enum
+
+valid_locations = [
+    "apac",
+    "emea",
+    "latam",
+    "argentina",
+    "australia",
+    "austria",
+    "belgium",
+    "brazil",
+    "bulgaria",
+    "canada",
+    "china",
+    "costa-rica",
+    "croatia",
+    "cyprus",
+    "czechia",
+    "denmark",
+    "estonia",
+    "europe",
+    "finland",
+    "france",
+    "germany",
+    "greece",
+    "hungary",
+    "ireland",
+    "israel",
+    "italy",
+    "japan",
+    "latvia",
+    "lithuania",
+    "mexico",
+    "netherlands",
+    "new-zealand",
+    "norway",
+    "philippines",
+    "poland",
+    "portugal",
+    "romania",
+    "singapore",
+    "slovakia",
+    "slovenia",
+    "south-korea",
+    "spain",
+    "sweden",
+    "switzerland",
+    "thailand",
+    "turkiye",
+    "united-arab-emirates",
+    "uk",
+    "usa",
+    "vietnam",
+]
+
+
 class JobicyIntegration(APIIntegration):
     def __init__(self):
         super().__init__("Jobicy", "https://jobicy.com/api/v2/remote-jobs")
 
+    def validate_location(self, location_query: str) -> str:
+        print(
+            "Jobicy only accepts one parameter for location, so we will return the first valid location found."
+        )
+        for loc in location_query.split(","):
+            if loc in valid_locations:
+                return loc
+        return "brazil"
+
     def get_data(self, query: dict) -> list[Job]:
         # TODO validate queries
-        response = requests.get(self.url, params=query)
+        print("Calling Jobicy API at ", self.url, " with query ", query)
+        response = requests.get(self.url, params=query, timeout=10)
         response_obj = response.json()
         jobs = []
 
