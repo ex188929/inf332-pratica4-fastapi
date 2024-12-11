@@ -20,19 +20,22 @@ def get_jobs(request: Request):
 
     # get all query parameters
     location_param = request.query_params.get("location")
+    industry_param = request.query_params.get("industry")
 
     # jobicy
     jobicy_integration = JobicyIntegration()
-    geo = jobicy_integration.validate_location(location_param) if location_param else []
-    jobicy_data = jobicy_integration.get_data(
-        {
-            "count": count,  # Number of listings to return (default: 50, range: 1-50)
-            "geo": geo if geo else "brazil",  # Filter by country (default: brazil)
-            "industry": "dev",  # Filter by job category (default: all categories)
-            # NOTE: it doesn't return anything for any tag I try to use, it seems to be a bug...
-            # "tag": filters,  # Search by job title and description (default: all jobs)
-        }
-    )
+    geo = jobicy_integration.validate_location(location_param) if location_param else "anywhere"
+    industry = jobicy_integration.validate_business(industry_param) if industry_param else "all"
+    jobicy_filters = {
+        "count": count,  # Number of listings to return (default: 50, range: 1-50)
+        # NOTE: it doesn't return anything for any tag I try to use, it seems to be a bug...
+        # "tag": filters,  # Search by job title and description (default: all jobs)
+    }
+    if geo and geo != "anywhere":
+        jobicy_filters["geo"] = geo
+    if industry and industry != "all":
+        jobicy_filters["industry"] = industry
+    jobicy_data = jobicy_integration.get_data(jobicy_filters)
     jobicy_data = [job.to_dict() for job in jobicy_data]
 
     # APIBR

@@ -58,6 +58,26 @@ valid_locations = [
     "vietnam",
 ]
 
+valid_business = [
+    "business",
+    "copywriting",
+    "supporting",
+    "data-science",
+    "design-multimedia",
+    "admin",
+    "accounting-finance",
+    "hr",
+    "marketing",
+    "management",
+    "dev",
+    "seller",
+    "seo",
+    "smm",
+    "engineering",
+    "technical-support",
+    "web-app-design",
+]
+
 
 class JobicyIntegration(APIIntegration):
     def __init__(self):
@@ -70,7 +90,16 @@ class JobicyIntegration(APIIntegration):
         for loc in location_query.split(","):
             if loc in valid_locations:
                 return loc
-        return "brazil"
+        return "anywhere"
+
+    def validate_business(self, business_query: str) -> str:
+        print(
+            "Jobicy only accepts one parameter for business, so we will return the first valid business found."
+        )
+        for bus in business_query.split(","):
+            if bus in valid_business:
+                return bus
+        return "all"
 
     def get_data(self, query: dict) -> list[Job]:
         # TODO validate queries
