@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 from .services.JobicyIntegration import JobicyIntegration
 from .services.APIBRIntegration import APIBRIntegration
+from .services.TheirStackIntegration import TheirStackIntegration
 
 router = APIRouter()
-
 
 @router.get("/jobs", summary="Vagas", tags=["Jobs"])
 def say_hello():  # TODO: add args
@@ -16,7 +16,7 @@ def say_hello():  # TODO: add args
     count = 10
     filters = "fullstack"  # TODO: must be used to build tag (Jobicy) and term (APIBR)
 
-    # jobicy
+    # Jobicy
     jobicy_integration = JobicyIntegration()
     jobicy_data = jobicy_integration.get_data(
         {
@@ -45,10 +45,19 @@ def say_hello():  # TODO: add args
     apibr_data = [job.to_dict() for job in apibr_data]
 
     # TheirStack
-    # TODO
+    theirstack_integration = TheirStackIntegration()
+    theirstack_data = theirstack_integration.get_data(
+        {
+            "count": count,  # Number of listings to return
+            "term": filters,  # Search term
+            "location": "Brazil"  # Location filter
+        }
+    )
+    theirstack_data = [job.to_dict() for job in theirstack_data]
 
     # TODO: pagination
     data.extend(jobicy_data)
     data.extend(apibr_data)
+    data.extend(theirstack_data)
 
     return data
