@@ -36,9 +36,17 @@ def get_jobs(request: Request):
     required_skills = required_skills_param if required_skills_param else ""
     title = title_param if title_param else ""
     description = description_param if description_param else ""
+    tags = []
+    if required_skills:
+        tags.append(required_skills)
+    if title:
+        tags.append(description)
+    if description:
+        tags.append(description)
+    tag = ",".join(tags)
     jobicy_filters = {
         "count": count,  # Number of listings to return (default: 50, range: 1-50)
-        "tag": required_skills + "," + title + ',' + description,  # Search by job title and description (default: all jobs)
+        "tag": tag,  # Search by job title and description (default: all jobs)
     }
     if geo and geo != "anywhere":
         jobicy_filters["geo"] = geo
