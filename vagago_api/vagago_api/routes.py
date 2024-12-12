@@ -56,18 +56,31 @@ def get_jobs(request: Request):
     jobicy_data = [job.to_dict() for job in jobicy_data]
 
     # APIBR
-    # TODO: concatenate all filters? it seems to use comma separator
-    term = ",".join(filters)
-    term += ",Brasil"
-
     apibr_integration = APIBRIntegration()
-    apibr_data = apibr_integration.get_data(
-        {
-            "page": 1,  # page number
-            "per_page": count,  # number of listings to return
-            # "term": term,
-        }
-    )
+    # concatenate all filters, it uses blanks as separator
+    title = title_param if title_param else ""
+    required_skills = " ".join(required_skills_param.split(',')) if required_skills_param else ""
+    location = location_param if location_param else ""
+    contracttype = contracttype_param if contracttype_param else ""
+    companyname = companyname_param if companyname_param else ""
+    terms = []
+    if title:
+        terms.append(title)
+    if required_skills:
+        terms.append(required_skills)
+    if location:
+        terms.append(location)
+    if contracttype:
+        terms.append(contracttype)
+    if companyname:
+        terms.append(companyname)
+    term = " ".join(terms)
+    apibr_filters = {
+        "page": 1,  # page number
+        "per_page": count,  # number of listings to return
+        "term": term,
+    }
+    apibr_data = apibr_integration.get_data(apibr_filters)
     apibr_data = [job.to_dict() for job in apibr_data]
 
     # TheirStack
