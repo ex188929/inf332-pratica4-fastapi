@@ -1,7 +1,7 @@
 import requests
 from .APIIntegration import APIIntegration
 from ..models.Job import Job
-from vivago_api.settings import THEIRSTACK_API_KEY
+from vagago_api.settings import THEIRSTACK_API_KEY
 
 class TheirStackIntegration(APIIntegration):
     def __init__(self):
