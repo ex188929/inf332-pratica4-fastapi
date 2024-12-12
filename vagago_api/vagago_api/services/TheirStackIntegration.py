@@ -20,11 +20,11 @@ class TheirStackIntegration(APIIntegration):
             "industries": query.get("industries", []),  # Indústrias ou áreas de negócio
             "count": query.get("count", 10),  # Número de vagas a retornar
             "employer_id": query.get("employer_id", ""),  # Empregador específico
-            "salary_range": query.get("salary_range", ""),  # Faixa salarial
+            #"salary_range": query.get("salary_range", ""),  # Faixa salarial
             "keywords": query.get("keywords", ""),  # Palavras-chave adicionais
             "availability": query.get("availability", ""),  # Disponibilidade da vaga
-            "languages": query.get("languages", []),  # Idiomas exigidos
-            "education_level": query.get("education_level", "")  # Nível de educação
+            #"languages": query.get("languages", []),  # Idiomas exigidos
+            #"education_level": query.get("education_level", "")  # Nível de educação
         }
 
         # Remover parâmetros vazios ou não configurados

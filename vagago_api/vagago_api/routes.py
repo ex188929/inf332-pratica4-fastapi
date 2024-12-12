@@ -82,9 +82,9 @@ def get_jobs(request: Request):
             "skills": required_skills_param.split(",") if required_skills_param else [],
             "industries": industry_param.split(",") if industry_param else [],
             "employer_id": employer_id_param,
-            "salary_range": salary_range_param,
-            "languages": languages_param.split(",") if languages_param else [],
-            "education_level": education_level_param
+            #"salary_range": salary_range_param,
+            #"languages": languages_param.split(",") if languages_param else [],
+            #"education_level": education_level_param
         }
     )
     theirstack_data = [job.to_dict() for job in theirstack_data]
