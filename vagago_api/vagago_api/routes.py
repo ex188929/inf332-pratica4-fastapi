@@ -21,19 +21,24 @@ def get_jobs(request: Request):
     # get all query parameters
     location_param = request.query_params.get("location")
     industry_param = request.query_params.get("industry")
+    required_skills_param = request.query_params.get("required_skills")
+    title_param = request.query_params.get("title")
+    description_param = request.query_params.get("description")
 
     # jobicy
     jobicy_integration = JobicyIntegration()
     geo = jobicy_integration.validate_location(location_param) if location_param else "anywhere"
     industry = jobicy_integration.validate_business(industry_param) if industry_param else "all"
+    required_skills = required_skills_param if required_skills_param else ""
+    title = title_param if title_param else ""
+    description = description_param if description_param else ""
     jobicy_filters = {
         "count": count,  # Number of listings to return (default: 50, range: 1-50)
-        # NOTE: it doesn't return anything for any tag I try to use, it seems to be a bug...
-        # "tag": filters,  # Search by job title and description (default: all jobs)
+        "tag": required_skills + "," + title + ',' + description,  # Search by job title and description (default: all jobs)
     }
     if geo and geo != "anywhere":
         jobicy_filters["geo"] = geo
-    if industry and industry != "all":
+    if industry and industry != "all" and required_skills == "":
         jobicy_filters["industry"] = industry
     jobicy_data = jobicy_integration.get_data(jobicy_filters)
     jobicy_data = [job.to_dict() for job in jobicy_data]
