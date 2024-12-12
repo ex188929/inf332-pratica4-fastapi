@@ -20,9 +20,10 @@ class Database:
 
     def insert(self, table, values):
         connection = self.get_connection()
-        connection.execute(insert(table), values)
+        result = connection.execute(insert(table).returning(*table.c), values)
         connection.commit()
+        return result.fetchone()
 
-    def query(self, query):
+    def query(self, query, params = None):
         connection = self.get_connection()
-        return connection.execute(text(query)).fetchone()
+        return connection.execute(text(query), params).fetchall()
