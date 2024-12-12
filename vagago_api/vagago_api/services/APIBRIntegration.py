@@ -64,7 +64,7 @@ class APIBRIntegration(APIIntegration):
                         locations.append(lname)
                 elif ltype == "label":
                     # NOTE: there is no easy way to differentiate skills and
-                    # locations I noticed that in some cases the separator is
+                    # locations. I noticed that in some cases the separator is
                     # used to indicate states or countries, and in some
                     # repos the black color is used for several locations.
                     # There is no garantee this is correct...
@@ -74,13 +74,13 @@ class APIBRIntegration(APIIntegration):
                         skills.append(lname)
 
             # NOTE: decided to concatenate levels because the default value is
-            # a string, this have to be considered in filters
+            # a string, using the APIBR separator (blank)
             level = "/".join(levels)
             # NOTE: there is no easy way to get salary
             salary_min, salary_max, salary_currency = None, None, None
             # NOTE: there is not easy way to get the full description
             description = ""
-            # NOTE: decided to consider the author fo the issue as the company
+            # NOTE: decided to consider the author of the issue as the company
             company_name = job["user"]["login"]
 
             new_job = Job(
