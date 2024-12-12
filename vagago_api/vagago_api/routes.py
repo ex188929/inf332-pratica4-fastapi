@@ -30,9 +30,9 @@ def get_jobs(request: Request):
     published_date_param = request.query_params.get("published_date")
     job_type_param = request.query_params.get("job_type")
     employer_id_param = request.query_params.get("employer_id")
-    salary_range_param = request.query_params.get("salary_range")
-    languages_param = request.query_params.get("languages")
-    education_level_param = request.query_params.get("education_level")
+    #salary_range_param = request.query_params.get("salary_range")
+    #languages_param = request.query_params.get("languages")
+    #education_level_param = request.query_params.get("education_level")
 
     # jobicy
 
