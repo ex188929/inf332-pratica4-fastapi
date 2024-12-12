@@ -1,12 +1,14 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from .services.JobicyIntegration import JobicyIntegration
+from .services.Database import Database
+from .models.User import User
 from .services.APIBRIntegration import APIBRIntegration
 
 router = APIRouter()
 
 
 @router.get("/jobs", summary="Vagas", tags=["Jobs"])
-def say_hello():  # TODO: add args
+def get_jobs(request: Request):
     """
     Retorna uma lista de vagas de emprego.
     """
@@ -16,17 +18,29 @@ def say_hello():  # TODO: add args
     count = 10
     filters = "fullstack"  # TODO: must be used to build tag (Jobicy) and term (APIBR)
 
+    # get all query parameters
+    location_param = request.query_params.get("location")
+    industry_param = request.query_params.get("industry")
+    required_skills_param = request.query_params.get("required_skills")
+    title_param = request.query_params.get("title")
+    description_param = request.query_params.get("description")
+
     # jobicy
     jobicy_integration = JobicyIntegration()
-    jobicy_data = jobicy_integration.get_data(
-        {
-            "count": count,  # Number of listings to return (default: 50, range: 1-50)
-            "geo": "brazil",  # Filter by job region (default: all regions)
-            "industry": "dev",  # Filter by job category (default: all categories)
-            # NOTE: it doesn't return anything for any tag I try to use, it seems to be a bug...
-            # "tag": filters,  # Search by job title and description (default: all jobs)
-        }
-    )
+    geo = jobicy_integration.validate_location(location_param) if location_param else "anywhere"
+    industry = jobicy_integration.validate_business(industry_param) if industry_param else "all"
+    required_skills = required_skills_param if required_skills_param else ""
+    title = title_param if title_param else ""
+    description = description_param if description_param else ""
+    jobicy_filters = {
+        "count": count,  # Number of listings to return (default: 50, range: 1-50)
+        "tag": required_skills + "," + title + ',' + description,  # Search by job title and description (default: all jobs)
+    }
+    if geo and geo != "anywhere":
+        jobicy_filters["geo"] = geo
+    if industry and industry != "all" and required_skills == "":
+        jobicy_filters["industry"] = industry
+    jobicy_data = jobicy_integration.get_data(jobicy_filters)
     jobicy_data = [job.to_dict() for job in jobicy_data]
 
     # APIBR
@@ -52,3 +66,26 @@ def say_hello():  # TODO: add args
     data.extend(apibr_data)
 
     return data
+
+
+@router.get("/users/{user_id}", summary="Usuário", tags=["Users"])
+def get_user(user_id: int):
+    """
+    Retorna um usuário por ID.
+    """
+    db = Database()
+    query = f"SELECT * FROM users WHERE id = {user_id}"
+    result = db.query(query)
+    print(result)
+    user = User(
+        id=result[0],
+        name=result[1],
+        email=result[2],
+        location=result[3],
+        password=result[4],
+        skills=result[5],
+        desired_salary_min=result[7],
+        desired_salary_max=result[8],
+        desired_salary_currency=result[9],
+    )
+    return user.to_dict()
