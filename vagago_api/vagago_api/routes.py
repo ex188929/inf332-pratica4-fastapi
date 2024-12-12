@@ -14,16 +14,20 @@ def get_jobs(request: Request):
     """
     data = []
 
-    # TODO: parse filters to each API
-    count = 10
-    filters = "fullstack"  # TODO: must be used to build tag (Jobicy) and term (APIBR)
-
     # get all query parameters
-    location_param = request.query_params.get("location")
-    industry_param = request.query_params.get("industry")
-    required_skills_param = request.query_params.get("required_skills")
     title_param = request.query_params.get("title")
+    required_skills_param = request.query_params.get("required_skills")
+    location_param = request.query_params.get("location")
+    contracttype_param = request.query_params.get("contracttype")
+    salarymin_param = request.query_params.get("salary_min")
+    salarymax_param = request.query_params.get("salary_max")
+    salarycurrency_param = request.query_params.get("salary_currency")
     description_param = request.query_params.get("description")
+    companyname_param = request.query_params.get("companyname")
+    industry_param = request.query_params.get("industry")
+    count_param = request.query_params.get("count")
+
+    count = count_param if count_param else 10  # to each API
 
     # jobicy
     jobicy_integration = JobicyIntegration()
