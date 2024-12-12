@@ -1,8 +1,13 @@
+"""Routes for VagaGO API."""
+
+from itertools import zip_longest
+
 from fastapi import APIRouter, Request
-from .services.JobicyIntegration import JobicyIntegration
-from .services.Database import Database
+
 from .models.User import User
 from .services.APIBRIntegration import APIBRIntegration
+from .services.Database import Database
+from .services.JobicyIntegration import JobicyIntegration
 
 router = APIRouter()
 
@@ -27,7 +32,7 @@ def get_jobs(request: Request):
     industry_param = request.query_params.get("industry")
     count_param = request.query_params.get("count")
 
-    count = count_param if count_param else 10  # to each API
+    count = int(count_param) if count_param else 10  # to each API
 
     # jobicy
     jobicy_integration = JobicyIntegration()
@@ -85,11 +90,17 @@ def get_jobs(request: Request):
 
     # TheirStack
     # TODO
+    theirstack_data = []
 
-    # TODO: pagination
-    data.extend(jobicy_data)
-    data.extend(apibr_data)
-
+    # Pagination
+    data = [
+        item
+        for triplet in zip_longest(jobicy_data, apibr_data, theirstack_data)
+        for item in triplet
+        if item is not None
+    ]
+    if len(data) > count:
+        data = data[:count]
     return data
 
 
