@@ -145,7 +145,8 @@ class JobicyIntegration(APIIntegration):
         if description:
             tags.append(description)
         tag = ",".join(tags)
-        params["tag"] = tag  # Search by job title and description (default: all jobs)
+        if tag:
+            params["tag"] = tag  # Search by job title and description (default: all jobs)
 
         geo = self.validate_location(location) if location else "anywhere"
         if geo and geo != "anywhere":
