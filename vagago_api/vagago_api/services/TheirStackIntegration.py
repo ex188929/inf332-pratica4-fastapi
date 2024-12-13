@@ -31,10 +31,6 @@ class TheirStackIntegration(APIIntegration):
         """
         # parse params
         payload = {
-            "order_by": [
-                {"desc": True, "field": "date_posted"},
-                {"desc": True, "field": "discovered_at"},
-            ],
             "offset": 0,
             "page": 0,
             "posted_at_max_age_days": 365,
@@ -58,18 +54,14 @@ class TheirStackIntegration(APIIntegration):
         for arg, payloadarg in arg2payloadarg.items():
             value = query.get(arg, "")
             if not value:
-                if arg == "salary_min":
-                    value = 0
-                elif arg == "salary_max":
-                    value = 1_000_000_000
-                else:
-                    value = []
+                value = []
             if isinstance(value, str):
                 if arg == "required_skills":
                     value = value.split(",")
                 else:
                     value = [value, ]
-            payload[payloadarg] = value
+            if value != []:
+                payload[payloadarg] = value
 
         # make request
         print(f'Calling TheirStackAPI at {self.url} with payload: {payload}')

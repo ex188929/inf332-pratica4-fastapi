@@ -1,5 +1,6 @@
 """Routes for VagaGO API."""
 
+from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 from typing import List, Optional
 
@@ -48,25 +49,38 @@ def get_jobs(
     }
     data = []
 
-    # jobicy
+    # APIs
     jobicy_integration = JobicyIntegration()
-    jobicy_data = jobicy_integration.get_data(filters)
-    jobicy_data = [job.to_dict() for job in jobicy_data]
-
-    # APIBR
     apibr_integration = APIBRIntegration()
-    apibr_data = apibr_integration.get_data(filters)
-    apibr_data = [job.to_dict() for job in apibr_data]
-
-    # TheirStack
     theirstack_integration = TheirStackIntegration()
-    theirstack_data = theirstack_integration.get_data(filters)
-    theirstack_data = [job.to_dict() for job in theirstack_data]
 
-    # Pagination
+    # get results
+    results = {}
+    apis_2_call = [
+        jobicy_integration.get_data,
+        apibr_integration.get_data,
+        theirstack_integration.get_data,
+    ]
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            executor.submit(apicall, filters): apicall for apicall in apis_2_call
+        }
+        for future in futures:
+            api_name = futures[future]
+            try:
+                results[api_name] = future.result()
+            except Exception as e:
+                results[api_name] = {"error": str(e)}
+
+    results_as_dict = []
+    for api_name, result in results.items():
+        print(api_name, result)
+        results_as_dict.append([job.to_dict() for job in result])
+
+    # do pagination
     data = [
         item
-        for triplet in zip_longest(jobicy_data, apibr_data, theirstack_data)
+        for triplet in zip_longest(*results_as_dict)
         for item in triplet
         if item is not None
     ]
