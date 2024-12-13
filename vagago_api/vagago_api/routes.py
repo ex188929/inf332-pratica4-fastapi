@@ -70,7 +70,8 @@ def get_jobs(
             try:
                 results[api_name] = future.result()
             except Exception as e:
-                results[api_name] = {"error": str(e)}
+                print(api_name, " ---> Error", str(e))
+                results[api_name] = []
 
     results_as_dict = []
     for api_name, result in results.items():
