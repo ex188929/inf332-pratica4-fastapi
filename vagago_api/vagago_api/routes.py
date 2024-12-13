@@ -1,103 +1,86 @@
 """Routes for VagaGO API."""
 
+from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 from typing import List, Optional
 
-from fastapi import APIRouter, Query, Request, status
+from fastapi import APIRouter, Query, status
 from sqlalchemy import text
 
+from .models.Job import JobSchema
 from .models.User import User, users_table, UserSchema
 from .services.APIBRIntegration import APIBRIntegration
 from .services.Database import Database
 from .services.JobicyIntegration import JobicyIntegration
+from .services.TheirStackIntegration import TheirStackIntegration
 
 router = APIRouter()
 
 
-@router.get("/jobs", summary="Vagas", tags=["Jobs"])
-def get_jobs(request: Request):
+@router.get("/jobs", summary="Vagas", tags=["Jobs"], response_model=List[JobSchema])
+def get_jobs(
+    title: Optional[str] = Query(None, description="Título da vaga"),
+    required_skills: Optional[str] = Query(None, description="Habilidades requeridas"),
+    location: Optional[str] = Query(None, description="Localização da vaga"),
+    contracttype: Optional[str] = Query(None, description="Tipo de contrato"),
+    salary_min: Optional[int] = Query(None, description="Salário mínimo"),
+    salary_max: Optional[int] = Query(None, description="Salário máximo"),
+    salary_currency: Optional[str] = Query(None, description="Moeda do salário"),
+    description: Optional[str] = Query(None, description="Descrição da vaga"),
+    company_name: Optional[str] = Query(None, description="Nome da empresa"),
+    industry: Optional[str] = Query(None, description="Indústria"),
+    count: Optional[int] = Query(10, description="Quantidade de vagas a retornar")
+):
     """
     Retorna uma lista de vagas de emprego.
     """
+    filters = {
+        "title": title,
+        "required_skills": required_skills,
+        "location": location,
+        "contracttype": contracttype,
+        "salary_min": salary_min,
+        "salary_max": salary_max,
+        "salary_currency": salary_currency,
+        "description": description,
+        "company_name": company_name,
+        "industry": industry,
+        "count": count,
+    }
     data = []
 
-    # get all query parameters
-    title_param = request.query_params.get("title")
-    required_skills_param = request.query_params.get("required_skills")
-    location_param = request.query_params.get("location")
-    contracttype_param = request.query_params.get("contracttype")
-    salarymin_param = request.query_params.get("salary_min")
-    salarymax_param = request.query_params.get("salary_max")
-    salarycurrency_param = request.query_params.get("salary_currency")
-    description_param = request.query_params.get("description")
-    companyname_param = request.query_params.get("companyname")
-    industry_param = request.query_params.get("industry")
-    count_param = request.query_params.get("count")
-
-    count = int(count_param) if count_param else 10  # to each API
-
-    # jobicy
+    # APIs
     jobicy_integration = JobicyIntegration()
-    geo = jobicy_integration.validate_location(location_param) if location_param else "anywhere"
-    industry = jobicy_integration.validate_business(industry_param) if industry_param else "all"
-    required_skills = required_skills_param if required_skills_param else ""
-    title = title_param if title_param else ""
-    description = description_param if description_param else ""
-    tags = []
-    if required_skills:
-        tags.append(required_skills)
-    if title:
-        tags.append(description)
-    if description:
-        tags.append(description)
-    tag = ",".join(tags)
-    jobicy_filters = {
-        "count": count,  # Number of listings to return (default: 50, range: 1-50)
-        "tag": tag,  # Search by job title and description (default: all jobs)
-    }
-    if geo and geo != "anywhere":
-        jobicy_filters["geo"] = geo
-    if industry and industry != "all" and required_skills == "":
-        jobicy_filters["industry"] = industry
-    jobicy_data = jobicy_integration.get_data(jobicy_filters)
-    jobicy_data = [job.to_dict() for job in jobicy_data]
-
-    # APIBR
     apibr_integration = APIBRIntegration()
-    # concatenate all filters, it uses blanks as separator
-    title = title_param if title_param else ""
-    required_skills = " ".join(required_skills_param.split(',')) if required_skills_param else ""
-    location = location_param if location_param else ""
-    contracttype = contracttype_param if contracttype_param else ""
-    companyname = companyname_param if companyname_param else ""
-    terms = []
-    if title:
-        terms.append(title)
-    if required_skills:
-        terms.append(required_skills)
-    if location:
-        terms.append(location)
-    if contracttype:
-        terms.append(contracttype)
-    if companyname:
-        terms.append(companyname)
-    term = " ".join(terms)
-    apibr_filters = {
-        "page": 1,  # page number
-        "per_page": count,  # number of listings to return
-        "term": term,
-    }
-    apibr_data = apibr_integration.get_data(apibr_filters)
-    apibr_data = [job.to_dict() for job in apibr_data]
+    theirstack_integration = TheirStackIntegration()
 
-    # TheirStack
-    # TODO
-    theirstack_data = []
+    # get results
+    results = {}
+    apis_2_call = [
+        jobicy_integration.get_data,
+        apibr_integration.get_data,
+        theirstack_integration.get_data,
+    ]
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {
+            executor.submit(apicall, filters): apicall for apicall in apis_2_call
+        }
+        for future in futures:
+            api_name = futures[future]
+            try:
+                results[api_name] = future.result()
+            except Exception as e:
+                results[api_name] = {"error": str(e)}
 
-    # Pagination
+    results_as_dict = []
+    for api_name, result in results.items():
+        print(api_name, result)
+        results_as_dict.append([job.to_dict() for job in result])
+
+    # do pagination
     data = [
         item
-        for triplet in zip_longest(jobicy_data, apibr_data, theirstack_data)
+        for triplet in zip_longest(*results_as_dict)
         for item in triplet
         if item is not None
     ]
@@ -106,7 +89,12 @@ def get_jobs(request: Request):
     return data
 
 
-@router.get("/users/{user_id}", summary="Usuário", tags=["Users"], status_code=status.HTTP_200_OK)
+@router.get(
+    "/users/{user_id}",
+    summary="Usuário",
+    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+)
 def get_user(user_id: int):
     """
     Retorna um usuário por ID.
@@ -142,7 +130,12 @@ def get_user(user_id: int):
     return user.to_dict()
 
 
-@router.get("/users", summary="Usuários", tags=["Users"], status_code=status.HTTP_200_OK)
+@router.get(
+    "/users",
+    summary="Usuários",
+    tags=["Users"],
+    status_code=status.HTTP_200_OK,
+)
 def get_users(
     name: Optional[str] = Query(None, description="Filtrar por nome (busca parcial)"),
     email: Optional[str] = Query(None, description="Filtrar por email (busca parcial)"),
@@ -215,7 +208,12 @@ def get_users(
     return users
 
 
-@router.post("/users", summary="Criar Usuário", tags=["Users"], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/users",
+    summary="Criar Usuário",
+    tags=["Users"],
+    status_code=status.HTTP_201_CREATED,
+)
 def create_user(user: UserSchema):
     """
     Cria um usuário.
@@ -248,7 +246,13 @@ def create_user(user: UserSchema):
     )
     return userResponse.to_dict()
 
-@router.put("/users/{user_id}", summary="Atualizar Usuário", tags=["Users"], status_code=status.HTTP_200_OK)
+
+@router.put(
+    "/users/{user_id}",
+    summary="Atualizar Usuário",
+    tags=["Users"],
+    status_code=status.HTTP_200_OK
+)
 def update_user(user_id: int, user: UserSchema):
     """
     Atualiza um usuário.
@@ -284,7 +288,13 @@ def update_user(user_id: int, user: UserSchema):
     connection.execute(query, params)
     connection.commit()
 
-@router.delete("/users/{user_id}", summary="Deletar Usuário", tags=["Users"], status_code=status.HTTP_204_NO_CONTENT)
+
+@router.delete(
+    "/users/{user_id}",
+    summary="Deletar Usuário",
+    tags=["Users"],
+    status_code=status.HTTP_204_NO_CONTENT
+)
 def delete_user(user_id: int):
     """
     Deleta um usuário.
