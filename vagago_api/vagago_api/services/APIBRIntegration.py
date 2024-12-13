@@ -8,20 +8,63 @@ class APIBRIntegration(APIIntegration):
         super().__init__("APIBR", "https://apibr.com/vagas/api/v2/issues")
 
     def get_data(self, query: dict) -> list[Job]:
+        """Get Data from API.
+
+        Args:
+            query (dict): dict with args:
+                title
+                required_skills
+                location
+                contracttype
+                salary_min
+                salary_max
+                salary_currency
+                description
+                company_name
+                industry
+                count
+
+        Returns:
+            list[Job]: List of Jobs returned by API.
+        """
+        title = query.get("title", "")
+        required_skills = query.get("required_skills", "")
+        location = query.get("location", "")
+        contracttype = query.get("contracttype", "")
+        salary_min = query.get("salary_min", None)
+        salary_max = query.get("salary_max", None)
+        salary_currency = query.get("salary_currency", "")
+        description = query.get("description", "")
+        company_name = query.get("company_name", "")
+        industry = query.get("industry", "")  # not used
+        count = query.get("count", 10)
 
         # parse params
         params = {
-            "page": query.get("page", 1),
-            "per_page": query.get("per_page", 10),
+            "page": 1,
+            "per_page": count,
         }
-        term = query.get("term", None)
+        terms = []
+        if title:
+            terms.append(title)
+        if required_skills:
+            # concatenate all filters, it uses blanks as separator
+            terms.append(required_skills.replace(",", " "))
+        if location:
+            terms.append(location)
+        if contracttype:
+            terms.append(contracttype)
+        if company_name:
+            terms.append(company_name)
+        term = " ".join(terms)
         if term:
             params["term"] = term
 
-        # get response
-        # after several hours of debug, I found that this header is necessary
+        # make request
+        print(f"Calling APIBR at {self.url} with params: {params}")
         headers = {
             "accept": "application/json",
+            # after several hours of debug, I found that this header is necessary
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         }
         response = requests.get(
@@ -74,7 +117,7 @@ class APIBRIntegration(APIIntegration):
                         skills.append(lname)
 
             # NOTE: decided to concatenate levels because the default value is
-            # a string, using the APIBR separator (blank)
+            # a string
             level = "/".join(levels)
             # NOTE: there is no easy way to get salary
             salary_min, salary_max, salary_currency = None, None, None

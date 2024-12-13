@@ -10,6 +10,26 @@ class TheirStackIntegration(APIIntegration):
         )
 
     def get_data(self, query: dict) -> list[Job]:
+        """Get Data from API.
+
+        Args:
+            query (dict): dict with args:
+                title
+                required_skills
+                location
+                contracttype
+                salary_min
+                salary_max
+                salary_currency
+                description
+                company_name
+                industry
+                count
+
+        Returns:
+            list[Job]: List of Jobs returned by API.
+        """
+        # parse params
         payload = {
             "order_by": [
                 {"desc": True, "field": "date_posted"},
@@ -26,9 +46,10 @@ class TheirStackIntegration(APIIntegration):
             "title": "job_title_or",
             "description": "job_description_pattern_or",
             "location": "job_location_pattern_or",
-            "salarymin": "min_salary_usd",
-            "salarymax": "max_salary_usd",
-            # NOTE: salarycurrency is ignored because the only possibility to
+            # NOTE: there is no available filter for job_type
+            "salary_min": "min_salary_usd",
+            "salary_max": "max_salary_usd",
+            # NOTE: salary_currency is ignored because the only possibility to
             # search is with the keys above
             "company_name": "company_name_or",
             "required_skills": "company_technology_slug_or",
@@ -37,9 +58,9 @@ class TheirStackIntegration(APIIntegration):
         for arg, payloadarg in arg2payloadarg.items():
             value = query.get(arg, "")
             if not value:
-                if arg == "salarymin":
+                if arg == "salary_min":
                     value = 0
-                elif arg == "salarymax":
+                elif arg == "salary_max":
                     value = 1_000_000_000
                 else:
                     value = []
@@ -49,9 +70,9 @@ class TheirStackIntegration(APIIntegration):
                 else:
                     value = [value, ]
             payload[payloadarg] = value
-        print(f'Calling TheirStackAPI at {self.url} with payload: {payload}')
 
-        # use POST as defined in API documentation
+        # make request
+        print(f'Calling TheirStackAPI at {self.url} with payload: {payload}')
         THEIRSTACK_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhbmFjc28xNzc3QGdtYWlsLmNvbSIsInBlcm1pc3Npb25zIjoidXNlciJ9.INiVTJLdZzzX0mp2lVNijE3sskdddli79dqluf9GEW0"
         headers = {
             "Authorization": f"Bearer {THEIRSTACK_API_KEY}",
@@ -83,16 +104,16 @@ class TheirStackIntegration(APIIntegration):
                 new_job = Job(
                     external_id=job["id"],
                     title=job.get("job_title", ""),
-                    required_skills=job.get("company_object", {}).get("technology_names", ""),
+                    required_skills=job.get("company_object", {}).get("technology_names", []),
                     level=job.get("seniority", ""),
                     location=locations,
                     salary_min=job.get("min_annual_salary", None),
                     salary_max=job.get("max_annual_salary", None),
-                    salary_currency=job.get("salary_currency", ""),
+                    salary_currency=job.get("salary_currency", None),
                     description=job.get("description", ""),
                     job_type=[],  # NOTE: there is no easy way to get job_type
                     company_name=job.get("company_object", {}).get("name", ""),
-                    published_date=job["date_posted"],
+                    published_date=job.get("date_posted", None),
                     url=job.get("url", ""),
                 )
                 jobs.append(new_job)
