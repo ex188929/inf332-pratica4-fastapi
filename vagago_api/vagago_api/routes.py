@@ -10,6 +10,7 @@ from .models.User import User, users_table, UserSchema
 from .services.APIBRIntegration import APIBRIntegration
 from .services.Database import Database
 from .services.JobicyIntegration import JobicyIntegration
+from .services.TheirStackIntegration import TheirStackIntegration
 
 router = APIRouter()
 
@@ -34,20 +35,25 @@ def get_jobs(request: Request):
     industry_param = request.query_params.get("industry")
     count_param = request.query_params.get("count")
 
+    title = title_param if title_param else ""
+    required_skills = required_skills_param if required_skills_param else ""
+    location = location_param if location_param else ""
+    contracttype = contracttype_param if contracttype_param else ""
+    salarymin = salarymin_param if salarymin_param else ""
+    salarymax = salarymax_param if salarymax_param else ""
+    salarycurrency = salarycurrency_param if salarycurrency_param else ""
+    description = description_param if description_param else ""
+    companyname = companyname_param if companyname_param else ""
+    industry = industry_param if industry_param else ""
     count = int(count_param) if count_param else 10  # to each API
 
     # jobicy
     jobicy_integration = JobicyIntegration()
-    geo = jobicy_integration.validate_location(location_param) if location_param else "anywhere"
-    industry = jobicy_integration.validate_business(industry_param) if industry_param else "all"
-    required_skills = required_skills_param if required_skills_param else ""
-    title = title_param if title_param else ""
-    description = description_param if description_param else ""
     tags = []
     if required_skills:
         tags.append(required_skills)
     if title:
-        tags.append(description)
+        tags.append(title)
     if description:
         tags.append(description)
     tag = ",".join(tags)
@@ -55,26 +61,23 @@ def get_jobs(request: Request):
         "count": count,  # Number of listings to return (default: 50, range: 1-50)
         "tag": tag,  # Search by job title and description (default: all jobs)
     }
+    geo = jobicy_integration.validate_location(location) if location else "anywhere"
     if geo and geo != "anywhere":
         jobicy_filters["geo"] = geo
-    if industry and industry != "all" and required_skills == "":
-        jobicy_filters["industry"] = industry
+    bus = jobicy_integration.validate_business(industry) if industry else "all"
+    if bus and bus != "all" and required_skills == "":
+        jobicy_filters["industry"] = bus
     jobicy_data = jobicy_integration.get_data(jobicy_filters)
     jobicy_data = [job.to_dict() for job in jobicy_data]
 
     # APIBR
     apibr_integration = APIBRIntegration()
-    # concatenate all filters, it uses blanks as separator
-    title = title_param if title_param else ""
-    required_skills = " ".join(required_skills_param.split(',')) if required_skills_param else ""
-    location = location_param if location_param else ""
-    contracttype = contracttype_param if contracttype_param else ""
-    companyname = companyname_param if companyname_param else ""
     terms = []
     if title:
         terms.append(title)
     if required_skills:
-        terms.append(required_skills)
+        # concatenate all filters, it uses blanks as separator
+        terms.append(required_skills.replace(",", " "))
     if location:
         terms.append(location)
     if contracttype:
@@ -91,8 +94,21 @@ def get_jobs(request: Request):
     apibr_data = [job.to_dict() for job in apibr_data]
 
     # TheirStack
-    # TODO
-    theirstack_data = []
+    theirstack_integration = TheirStackIntegration()
+    theirstack_filters = {
+        "count": count,
+        "title": title,
+        "description": description,
+        "location": location,
+        "salarymin": salarymin,
+        "salarymax": salarymax,
+        "salarycurrency": salarycurrency,
+        "company_name": companyname,
+        "required_skills": required_skills,
+        "industry": industry,
+    }
+    theirstack_data = theirstack_integration.get_data(theirstack_filters)
+    theirstack_data = [job.to_dict() for job in theirstack_data]
 
     # Pagination
     data = [
