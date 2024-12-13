@@ -1,10 +1,15 @@
+"""Routes for VagaGO API."""
+
+from itertools import zip_longest
 from typing import List, Optional
+
+from fastapi import APIRouter, Query, Request, status
 from sqlalchemy import text
-from fastapi import APIRouter, Request, status, Query
-from .services.JobicyIntegration import JobicyIntegration
-from .services.Database import Database
-from .models.User import User, UserSchema, users_table
+
+from .models.User import User, users_table, UserSchema
 from .services.APIBRIntegration import APIBRIntegration
+from .services.Database import Database
+from .services.JobicyIntegration import JobicyIntegration
 
 router = APIRouter()
 
@@ -16,16 +21,20 @@ def get_jobs(request: Request):
     """
     data = []
 
-    # TODO: parse filters to each API
-    count = 10
-    filters = "fullstack"  # TODO: must be used to build tag (Jobicy) and term (APIBR)
-
     # get all query parameters
-    location_param = request.query_params.get("location")
-    industry_param = request.query_params.get("industry")
-    required_skills_param = request.query_params.get("required_skills")
     title_param = request.query_params.get("title")
+    required_skills_param = request.query_params.get("required_skills")
+    location_param = request.query_params.get("location")
+    contracttype_param = request.query_params.get("contracttype")
+    salarymin_param = request.query_params.get("salary_min")
+    salarymax_param = request.query_params.get("salary_max")
+    salarycurrency_param = request.query_params.get("salary_currency")
     description_param = request.query_params.get("description")
+    companyname_param = request.query_params.get("companyname")
+    industry_param = request.query_params.get("industry")
+    count_param = request.query_params.get("count")
+
+    count = int(count_param) if count_param else 10  # to each API
 
     # jobicy
     jobicy_integration = JobicyIntegration()
@@ -34,9 +43,17 @@ def get_jobs(request: Request):
     required_skills = required_skills_param if required_skills_param else ""
     title = title_param if title_param else ""
     description = description_param if description_param else ""
+    tags = []
+    if required_skills:
+        tags.append(required_skills)
+    if title:
+        tags.append(description)
+    if description:
+        tags.append(description)
+    tag = ",".join(tags)
     jobicy_filters = {
         "count": count,  # Number of listings to return (default: 50, range: 1-50)
-        "tag": required_skills + "," + title + ',' + description,  # Search by job title and description (default: all jobs)
+        "tag": tag,  # Search by job title and description (default: all jobs)
     }
     if geo and geo != "anywhere":
         jobicy_filters["geo"] = geo
@@ -46,27 +63,46 @@ def get_jobs(request: Request):
     jobicy_data = [job.to_dict() for job in jobicy_data]
 
     # APIBR
-    # TODO: concatenate all filters? it seems to use comma separator
-    term = ",".join(filters)
-    term += ",Brasil"
-
     apibr_integration = APIBRIntegration()
-    apibr_data = apibr_integration.get_data(
-        {
-            "page": 1,  # page number
-            "per_page": count,  # number of listings to return
-            # "term": term,
-        }
-    )
+    # concatenate all filters, it uses blanks as separator
+    title = title_param if title_param else ""
+    required_skills = " ".join(required_skills_param.split(',')) if required_skills_param else ""
+    location = location_param if location_param else ""
+    contracttype = contracttype_param if contracttype_param else ""
+    companyname = companyname_param if companyname_param else ""
+    terms = []
+    if title:
+        terms.append(title)
+    if required_skills:
+        terms.append(required_skills)
+    if location:
+        terms.append(location)
+    if contracttype:
+        terms.append(contracttype)
+    if companyname:
+        terms.append(companyname)
+    term = " ".join(terms)
+    apibr_filters = {
+        "page": 1,  # page number
+        "per_page": count,  # number of listings to return
+        "term": term,
+    }
+    apibr_data = apibr_integration.get_data(apibr_filters)
     apibr_data = [job.to_dict() for job in apibr_data]
 
     # TheirStack
     # TODO
+    theirstack_data = []
 
-    # TODO: pagination
-    data.extend(jobicy_data)
-    data.extend(apibr_data)
-
+    # Pagination
+    data = [
+        item
+        for triplet in zip_longest(jobicy_data, apibr_data, theirstack_data)
+        for item in triplet
+        if item is not None
+    ]
+    if len(data) > count:
+        data = data[:count]
     return data
 
 
