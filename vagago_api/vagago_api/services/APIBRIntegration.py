@@ -111,7 +111,7 @@ class APIBRIntegration(APIIntegration):
                     # used to indicate states or countries, and in some
                     # repos the black color is used for several locations.
                     # There is no garantee this is correct...
-                    if " - " in lname or "/" in lname or lcolor == "000000":
+                    if " - " in lname or lcolor == "000000":
                         locations.append(lname)
                     else:
                         skills.append(lname)
