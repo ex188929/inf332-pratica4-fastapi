@@ -65,7 +65,7 @@ class TheirStackIntegration(APIIntegration):
 
         # make request
         print(f'Calling TheirStackAPI at {self.url} with payload: {payload}')
-        THEIRSTACK_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJleDE4ODkzMkBnLnVuaWNhbXAuYnIiLCJwZXJtaXNzaW9ucyI6InVzZXIifQ.uD9MuJCpzOU18cUDmDS_TXncuzolXvmNV6wDt5q6boA"
+        THEIRSTACK_API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJleDE4ODc0OUBnLnVuaWNhbXAuYnIiLCJwZXJtaXNzaW9ucyI6InVzZXIifQ.co414M3gJofNLpc_UhNl_SSxnKTqWTRVpSPu2et8gKE"
         headers = {
             "Authorization": f"Bearer {THEIRSTACK_API_KEY}",
             "Content-Type": "application/json"
