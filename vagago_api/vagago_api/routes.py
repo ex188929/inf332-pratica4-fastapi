@@ -103,6 +103,9 @@ def get_user(user_id: int):
     query = f"SELECT * FROM users WHERE id = {user_id}"
     result = db.query(query)
 
+    if not result:
+        return []
+
     (
         id,
         name,
@@ -189,6 +192,9 @@ def get_users(
     query = text(" ".join(query_parts))
 
     result = db.get_connection().execute(query, params)
+
+    if not result:
+        return []
 
     users = []
     for user in result:
