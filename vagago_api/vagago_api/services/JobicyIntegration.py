@@ -175,6 +175,16 @@ class JobicyIntegration(APIIntegration):
             jobtype = job.get("jobType", [])
             if isinstance(jobtype, str):
                 jobtype = [jobtype, ]
+            salary_min = job.get("annualSalaryMin", None)
+            if isinstance(salary_min, (int, float)):
+                salary_min = float(salary_min)
+            else:
+                salary_min = None
+            salary_max = job.get("annualSalaryMax", None)
+            if isinstance(salary_max, (int, float)):
+                salary_max = float(salary_max)
+            else:
+                salary_max = None
 
             new_job = Job(
                 external_id=job["id"],
@@ -182,8 +192,8 @@ class JobicyIntegration(APIIntegration):
                 required_skills=[],  # TODO: parse description with LLM
                 level=job.get("jobLevel", ""),
                 location=jobgeo,
-                salary_min=job.get("annualSalaryMin", None),
-                salary_max=job.get("annualSalaryMax", None),
+                salary_min=salary_min,
+                salary_max=salary_max,
                 salary_currency=job.get("salaryCurrency", None),
                 description=job.get("jobDescription", ""),
                 job_type=jobtype,

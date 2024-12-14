@@ -92,6 +92,16 @@ class TheirStackIntegration(APIIntegration):
                     locations.append("Híbrido")
                 if remote:
                     locations.append("Remoto")
+                salary_min = job.get("min_annual_salary", None)
+                if isinstance(salary_min, (int, float)):
+                    salary_min = float(salary_min)
+                else:
+                    salary_min = None
+                salary_max = job.get("max_annual_salary", None)
+                if isinstance(salary_max, (int, float)):
+                    salary_max = float(salary_max)
+                else:
+                    salary_max = None
 
                 new_job = Job(
                     external_id=job["id"],
@@ -99,8 +109,8 @@ class TheirStackIntegration(APIIntegration):
                     required_skills=job.get("company_object", {}).get("technology_names", []),
                     level=job.get("seniority", ""),
                     location=locations,
-                    salary_min=job.get("min_annual_salary", None),
-                    salary_max=job.get("max_annual_salary", None),
+                    salary_min=salary_min,
+                    salary_max=salary_max,
                     salary_currency=job.get("salary_currency", None),
                     description=job.get("description", ""),
                     job_type=[],  # NOTE: there is no easy way to get job_type
